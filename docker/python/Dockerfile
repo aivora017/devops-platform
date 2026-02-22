@@ -2,7 +2,7 @@
 FROM python:3.12-slim
 
 # Create a non-root user group and user for security
-RUN addgroup -r appgroup && useradd -r -g appgroup appuser
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
 # Set the working directory inside the container
 WORKDIR /app
