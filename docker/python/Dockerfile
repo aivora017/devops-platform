@@ -1,5 +1,5 @@
-# Use Python 3.11 slim image for a smaller base image
-FROM python:3.11-slim@sha256:7c06bcc3d620dcc3b5ed0b10b6c1e0e1f3e5f8f9c5b3a2d1e0f8c7b6a5d4e3f
+# Use Python 3.15.0a6 Alpine image as the base for a smaller footprint
+FROM python:3.15.0a6-alpine3.23
 
 # Create a non-root user group and user for security
 RUN addgroup -r appgroup && useradd -r -g appgroup appuser
