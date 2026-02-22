@@ -1,5 +1,5 @@
-# Use Python 3.15.0a6 Alpine image as the base for a smaller footprint
-FROM python:3.15.0a6-alpine3.23
+# Use Python 3.12 slim image as the base for a smaller footprint
+FROM python:3.12-slim
 
 # Create a non-root user group and user for security
 RUN addgroup -r appgroup && useradd -r -g appgroup appuser
@@ -20,4 +20,4 @@ COPY app-python/ .
 USER appuser
 
 # Command to run the worker script
-CMD ["python3", "woker.py"]
+CMD ["python3", "worker.py"]
