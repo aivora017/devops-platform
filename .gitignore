@@ -6,3 +6,7 @@ terraform.tfstate.backup
 *.tfvars.json
 crash.log
 override.tf
+# Ansible
+ansible/inventory.ini
+*.retry
+ansible/ansible.log

@@ -1,6 +1,6 @@
 output "public_ip" {
     description = "Public IP address of the Jenkins EC2 instance"
-    value       = aws_instance.jenkins.public_ip
+    value       = aws_eip.jenkins.public_ip
   
 }
 

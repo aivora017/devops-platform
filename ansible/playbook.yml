@@ -1,0 +1,148 @@
+---
+- name: Configure Jenkins server
+  hosts: jenkins
+  become: true
+  gather_facts: true
+
+  vars:
+    jenkins_port: 8080
+    docker_users:
+        - ubuntu
+        - jenkins
+    java_package: openjdk-17-jdk
+    jenkins_repo_key_url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+    jenkins_repo: 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/'
+    docker_repo_key_url: https://download.docker.com/linux/ubuntu/gpg
+    docker_repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable'
+
+  tasks:
+    - name: Ensure Python 3 is installed
+      apt:
+        name: python3
+        state: present
+
+    - name: update apt cache and upgrade packages
+      apt:
+        update_cache: true
+        upgrade: true
+        cache_valid_time: 3600
+
+    - name: No root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+      notify: restart ssh
+
+    - name: Install Java
+      apt:
+        name: "{{ java_package }}"
+        state: present
+
+    - name: Verify Java installation
+      command: java -version
+      register: java_version
+      ignore_errors: true
+
+    - name: Print Java version
+      debug:
+        msg: "Java version installed: {{ java_version.stderr }}"
+
+    - name: Add Jenkins repository key
+      get_url:
+        url: "{{ jenkins_repo_key_url }}"
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+        mode: '0644'
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "{{ jenkins_repo }}"
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Verify Jenkins installation
+      command: java -jar /usr/share/jenkins/jenkins.war --version
+      register: jenkins_version
+      ignore_errors: true
+
+    - name: Print Jenkins version
+      debug:
+        msg: "Jenkins version installed: {{ jenkins_version.stdout }}"
+
+    - name: Install docker dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
+
+    - name: Add Docker GPG key
+      get_url:
+        url: "{{ docker_repo_key_url }}"
+        dest: /usr/share/keyrings/docker-archive-keyring.gpg
+        mode: '0644'
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "{{ docker_repo }}"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Start and enable Jenkins service
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Add users to docker group
+      user:
+        name: "{{ item }}"
+        groups: docker
+        append: yes
+      loop: "{{ docker_users }}"
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Wait for Jenkins to be up
+      uri:
+        url: "http://localhost:{{ jenkins_port }}"
+        status_code: [200, 403]
+      register: jenkins_status
+      retries: 10
+      delay: 15
+      until: jenkins_status.status in [200, 403]
+
+    - name: Get Jenkins initial admin password
+      slurp:
+        src: /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
+
+    - name: Print Jenkins initial admin password
+      debug:
+        msg:
+          - "Jenkins URL: http://{{ ansible_host }}:{{ jenkins_port }}"
+          - "Initial admin password: {{ jenkins_password.content | b64decode }}"
+
+  handlers:
+    - name: restart ssh
+      service:
+        name: ssh
+        state: restarted
+
