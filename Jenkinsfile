@@ -7,7 +7,7 @@ pipeline {
         PYTHON_IMAGE = "${DOCKER_HUB_USER}/devops-python-worker"
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         AWS_REGION = 'ap-southeast-2'
-        KUBECONFIG = '/root/.kube/config'
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
 
     stages {
