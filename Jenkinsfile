@@ -24,7 +24,42 @@ pipeline {
             }
         }
 
+        stage('Check System Resources') {
+            steps {
+                sh '''
+                    echo "=== System Resource Check ==="
+                    AVAILABLE_DISK=$(df /var/lib/docker | awk 'NR==2 {print $4}')
+                    AVAILABLE_RAM=$(free | awk 'NR==2 {print $7}')
+                    AVAILABLE_DISK_GB=$((AVAILABLE_DISK / 1024 / 1024))
+                    AVAILABLE_RAM_MB=$((AVAILABLE_RAM / 1024))
+                    
+                    echo "Available Disk: ${AVAILABLE_DISK_GB}GB"
+                    echo "Available RAM: ${AVAILABLE_RAM_MB}MB"
+                    
+                    if [ $AVAILABLE_DISK_GB -lt 2 ]; then
+                        echo " WARNING: Less than 2GB disk space available"
+                        echo "Docker image pull may fail. Skipping tests."
+                        exit 0
+                    fi
+                    
+                    if [ $AVAILABLE_RAM_MB -lt 300 ]; then
+                        echo "WARNING: Less than 300MB RAM available"
+                        echo "Docker containers may not run. Skipping tests."
+                        exit 0
+                    fi
+                    
+                    echo "System resources OK"
+                '''
+            }
+        }
+
         stage('Run Tests') {
+            steps {
+                sh '''
+                    echo "=== Cleaning up unused Docker images before tests ==="
+                    docker image prune -af --filter "until=72h" || true
+                '''
+            }
             parallel {
                 stage('Go Tests') {
                     steps {
@@ -32,7 +67,11 @@ pipeline {
                             script {
                                 sh '''
                                     echo "Running Go tests in Docker (Alpine lightweight)..."
-                                    docker run --rm -v $(pwd):/workspace -w /workspace golang:1.22-alpine go test ./... -v
+                                    docker run --rm \
+                                    --memory=256m \
+                                    -v $(pwd):/workspace \
+                                    -w /workspace golang:1.22-alpine \
+                                    go test ./... -v
                                 '''
                             }
                         }
@@ -45,9 +84,10 @@ pipeline {
                                 sh '''
                                     echo "Running Python tests in Docker (Alpine lightweight)..."
                                     docker run --rm \
+                                    --memory=256m \
                                     -v $(pwd):/workspace \
                                     -w /workspace python:3.11-alpine \
-                                    bash -c "pip install -r requirements.txt && python -m pytest tests/ -v || true"
+                                    sh -c "pip install -r requirements.txt && python -m pytest tests/ -v || true"
                                 '''
                             }
                         }
@@ -154,7 +194,15 @@ pipeline {
             sh 'echo "Pipeline failed. Please check the logs for details."'
         }
         always {
-            sh 'docker logout || true'
+            sh '''
+                echo "=== Cleaning up Docker resources ==="
+                docker logout || true
+                docker image prune -af --filter "until=24h" || true
+                docker container prune -af --filter "until=24h" || true
+                echo "=== Final System Status ==="
+                df -h /var/lib/docker
+                free -h
+            '''
             cleanWs()
         }
     }
