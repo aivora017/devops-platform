@@ -9,11 +9,7 @@
     docker_users:
         - ubuntu
         - jenkins
-    java_package: openjdk-17-jdk
-    jenkins_repo_key_url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-    jenkins_repo: 'deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/'
-    docker_repo_key_url: https://download.docker.com/linux/ubuntu/gpg
-    docker_repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable'
+    java_package: openjdk-21-jdk
 
   tasks:
     - name: Ensure Python 3 is installed
@@ -35,10 +31,17 @@
         state: present
       notify: restart ssh
 
+    - name: Check if Java is installed
+      shell: dpkg -l | grep openjdk-21
+      register: java_installed
+      failed_when: false
+      changed_when: false
+
     - name: Install Java
       apt:
         name: "{{ java_package }}"
         state: present
+      when: java_installed.rc != 0
 
     - name: Verify Java installation
       command: java -version
@@ -49,63 +52,50 @@
       debug:
         msg: "Java version installed: {{ java_version.stderr }}"
 
-    - name: Add Jenkins repository key
-      get_url:
-        url: "{{ jenkins_repo_key_url }}"
-        dest: /usr/share/keyrings/jenkins-keyring.asc
-        mode: '0644'
+    - name: Check if Jenkins is installed
+      shell: dpkg -l | grep jenkins
+      register: jenkins_installed
+      failed_when: false
+      changed_when: false
 
-    - name: Add Jenkins repository
-      apt_repository:
-        repo: "{{ jenkins_repo }}"
-        state: present
+    - name: Add Jenkins repository and install
+      shell: |
+        # NOTE: trusted=yes used for simplicity in dev/portfolio environment
+        # Production deployments should use proper GPG key verification
+        echo "deb [trusted=yes] https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list
+        apt-get update
+        apt-get install -y jenkins
+      retries: 3
+      delay: 5
+      register: jenkins_install
+      until: jenkins_install is succeeded
+      when: jenkins_installed.rc != 0
 
-    - name: Install Jenkins
-      apt:
-        name: jenkins
-        state: present
-
-    - name: Verify Jenkins installation
-      command: java -jar /usr/share/jenkins/jenkins.war --version
-      register: jenkins_version
-      ignore_errors: true
-
-    - name: Print Jenkins version
-      debug:
-        msg: "Jenkins version installed: {{ jenkins_version.stdout }}"
-
-    - name: Install docker dependencies
-      apt:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - apt-transport-https
-        - ca-certificates
-        - curl
-        - gnupg-agent
-        - software-properties-common
-
-    - name: Add Docker GPG key
-      get_url:
-        url: "{{ docker_repo_key_url }}"
-        dest: /usr/share/keyrings/docker-archive-keyring.gpg
-        mode: '0644'
-
-    - name: Add Docker repository
-      apt_repository:
-        repo: "{{ docker_repo }}"
-        state: present
+    - name: Check if Docker is installed
+      shell: dpkg -l | grep docker.io
+      register: docker_installed
+      failed_when: false
+      changed_when: false
 
     - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
+      shell: |
+        apt-get update
+        apt-get install -y docker.io
+      retries: 3
+      delay: 5
+      register: docker_install
+      until: docker_install is succeeded
+      when: docker_installed.rc != 0
 
     - name: Start and enable Jenkins service
       service:
         name: jenkins
         state: started
         enabled: yes
+      register: jenkins_start
+      retries: 3
+      delay: 5
+      until: jenkins_start is succeeded
 
     - name: Add users to docker group
       user:
@@ -129,16 +119,36 @@
       delay: 15
       until: jenkins_status.status in [200, 403]
 
-    - name: Get Jenkins initial admin password
+    - name: Wait for Jenkins initial password file (first-time setup only)
+      wait_for:
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+        state: present
+        delay: 5
+        timeout: 60
+      when: jenkins_install is defined and jenkins_install is changed
+
+    - name: Get Jenkins initial admin password (first-time setup only)
       slurp:
         src: /var/lib/jenkins/secrets/initialAdminPassword
       register: jenkins_password
+      when: jenkins_install is defined and jenkins_install is changed
+      ignore_errors: yes
 
-    - name: Print Jenkins initial admin password
+    - name: Print Jenkins information (first-time setup)
       debug:
         msg:
+          - "🎉 Jenkins installed successfully!"
           - "Jenkins URL: http://{{ ansible_host }}:{{ jenkins_port }}"
-          - "Initial admin password: {{ jenkins_password.content | b64decode }}"
+          - "👤 Username: admin"
+          - "🔑 Initial admin password: {{ jenkins_password.content | b64decode }}"
+      when: jenkins_install is defined and jenkins_install is changed and jenkins_password is succeeded
+
+    - name: Print Jenkins URL (already installed)
+      debug:
+        msg:
+          - "✅ Jenkins is running"
+          - "Jenkins URL: http://{{ ansible_host }}:{{ jenkins_port }}"
+      when: jenkins_install is not defined or not (jenkins_install is changed)
 
   handlers:
     - name: restart ssh
