@@ -73,3 +73,4 @@ docker-compose up
 kubectl delete namespace devops
 cd terraform/aws && terraform destroy
 ```
+# Updated Thu Feb 26 16:25:37 UTC 2026
