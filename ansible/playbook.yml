@@ -60,8 +60,6 @@
 
     - name: Add Jenkins repository and install
       shell: |
-        # NOTE: trusted=yes used for simplicity in dev/portfolio environment
-        # Production deployments should use proper GPG key verification
         echo "deb [trusted=yes] https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list
         apt-get update
         apt-get install -y jenkins
@@ -108,7 +106,7 @@
       service:
         name: docker
         state: started
-        enabled: yes
+        enabled: true
 
     - name: Wait for Jenkins to be up
       uri:
@@ -132,21 +130,21 @@
         src: /var/lib/jenkins/secrets/initialAdminPassword
       register: jenkins_password
       when: jenkins_install is defined and jenkins_install is changed
-      ignore_errors: yes
+      ignore_errors: true
 
     - name: Print Jenkins information (first-time setup)
       debug:
         msg:
-          - "🎉 Jenkins installed successfully!"
+          - "Jenkins installed successfully!"
           - "Jenkins URL: http://{{ ansible_host }}:{{ jenkins_port }}"
-          - "👤 Username: admin"
-          - "🔑 Initial admin password: {{ jenkins_password.content | b64decode }}"
+          - "Username: admin"
+          - "Initial admin password: {{ jenkins_password.content | b64decode }}"
       when: jenkins_install is defined and jenkins_install is changed and jenkins_password is succeeded
 
     - name: Print Jenkins URL (already installed)
       debug:
         msg:
-          - "✅ Jenkins is running"
+          - "Jenkins is running"
           - "Jenkins URL: http://{{ ansible_host }}:{{ jenkins_port }}"
       when: jenkins_install is not defined or not (jenkins_install is changed)
 
