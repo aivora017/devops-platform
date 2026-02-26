@@ -27,7 +27,11 @@ pipeline {
         stage('Check System Resources') {
             steps {
                 sh '''
-                    echo "=== System Resource Check ==="
+                    echo "=== BEFORE PIPELINE: System Resource Check ==="
+                    echo "Timestamp: $(date)"
+                    free -h | grep -E "Mem|Total"
+                    ps aux --sort=-%mem | head -10
+                    
                     AVAILABLE_DISK=$(df /var/lib/docker | awk 'NR==2 {print $4}')
                     AVAILABLE_RAM=$(free | awk 'NR==2 {print $7}')
                     AVAILABLE_DISK_GB=$((AVAILABLE_DISK / 1024 / 1024))
@@ -56,18 +60,37 @@ pipeline {
         }
 
         stage('Run Tests') {
+            steps {
+                sh '''
+                    echo "=== START RUN TESTS ==="
+                    echo "Memory before: $(free -h | grep Mem)"
+                    docker stats --no-stream || true
+                '''
+            }
+        }
+
+        stage('Parallel Tests') {
             parallel {
                 stage('Go Tests') {
                     steps {
                         dir('app-go') {
                             script {
                                 sh '''
+                                    echo "=== BEFORE Go Tests ==="
+                                    free -h | grep Mem
+                                    docker ps
+                                    echo "---"
+                                    
                                     echo "Running Go tests in Docker (Alpine lightweight)..."
                                     docker run --rm \
                                     --memory=256m \
                                     -v $(pwd):/workspace \
                                     -w /workspace golang:1.22-alpine \
                                     go test ./... -v
+                                    
+                                    echo "=== AFTER Go Tests ==="
+                                    free -h | grep Mem
+                                    docker ps
                                 '''
                             }
                         }
@@ -78,12 +101,21 @@ pipeline {
                         dir('app-python') {
                             script {
                                 sh '''
+                                    echo "=== BEFORE Python Tests ==="
+                                    free -h | grep Mem
+                                    docker ps
+                                    echo "---"
+                                    
                                     echo "Running Python tests in Docker (Alpine lightweight)..."
                                     docker run --rm \
                                     --memory=256m \
                                     -v $(pwd):/workspace \
                                     -w /workspace python:3.11-alpine \
                                     sh -c "pip install -r requirements.txt && python -m pytest tests/ -v || true"
+                                    
+                                    echo "=== AFTER Python Tests ==="
+                                    free -h | grep Mem
+                                    docker ps
                                 '''
                             }
                         }
@@ -92,13 +124,45 @@ pipeline {
             }
         }
 
+        stage('End Tests') {
+            steps {
+                sh '''
+                    echo "=== AFTER PARALLEL TESTS ==="
+                    free -h | grep Mem
+                    docker ps
+                    echo "---"
+                '''
+            }
+        }
+
         stage('Building Images'){
+            steps {
+                sh '''
+                    echo "=== START BUILDING IMAGES ==="
+                    free -h | grep Mem
+                    du -sh /var/lib/docker
+                '''
+            }
+        }
+
+        stage('Parallel Builds'){
             parallel{
                 stage('Build Go App') {
                     steps {
                         dir('app-go') {
                             script {
-                                sh 'docker build -t ${GO_IMAGE}:${IMAGE_TAG} -t ${GO_IMAGE}:latest .'
+                                sh '''
+                                    echo "=== BEFORE Go Build ==="
+                                    free -h | grep Mem
+                                    docker images | head -5
+                                    echo "---"
+                                    
+                                    docker build -t ${GO_IMAGE}:${IMAGE_TAG} -t ${GO_IMAGE}:latest .
+                                    
+                                    echo "=== AFTER Go Build ==="
+                                    free -h | grep Mem
+                                    docker images ${GO_IMAGE} || true
+                                '''
                             }
                         }
                     }
@@ -108,11 +172,33 @@ pipeline {
                     steps {
                         dir('app-python') {
                             script {
-                                sh 'docker build -t ${PYTHON_IMAGE}:${IMAGE_TAG} -t ${PYTHON_IMAGE}:latest .'
+                                sh '''
+                                    echo "=== BEFORE Python Build ==="
+                                    free -h | grep Mem
+                                    docker images | head -5
+                                    echo "---"
+                                    
+                                    docker build -t ${PYTHON_IMAGE}:${IMAGE_TAG} -t ${PYTHON_IMAGE}:latest .
+                                    
+                                    echo "=== AFTER Python Build ==="
+                                    free -h | grep Mem
+                                    docker images ${PYTHON_IMAGE} || true
+                                '''
                             }
                         }
                     }
                 }
+            }
+        }
+
+        stage('End Builds') {
+            steps {
+                sh '''
+                    echo "=== AFTER PARALLEL BUILDS ==="
+                    free -h | grep Mem
+                    du -sh /var/lib/docker
+                    echo "---"
+                '''
             }
         }
       
@@ -121,9 +207,16 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh '''
+                            echo "=== BEFORE Push ==="
+                            free -h | grep Mem
+                            docker images ${GO_IMAGE} ${PYTHON_IMAGE}
+                            echo "---"
+                        '''
                         sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
                         sh '''
                              #!/bin/bash
+                            echo "=== DURING Push ==="
                             set -e
                             retry() {
                                 local max_attempts=3
@@ -137,10 +230,29 @@ pipeline {
                                     sleep 5
                                 done
                             }
+                            
+                            echo "Pushing ${GO_IMAGE}:${IMAGE_TAG}..."
+                            free -h | grep Mem
                             retry docker push ${GO_IMAGE}:${IMAGE_TAG}
+                            free -h | grep Mem
+                            
+                            echo "Pushing ${GO_IMAGE}:latest..."
+                            free -h | grep Mem
                             retry docker push ${GO_IMAGE}:latest
+                            free -h | grep Mem
+                            
+                            echo "Pushing ${PYTHON_IMAGE}:${IMAGE_TAG}..."
+                            free -h | grep Mem
                             retry docker push ${PYTHON_IMAGE}:${IMAGE_TAG}
+                            free -h | grep Mem
+                            
+                            echo "Pushing ${PYTHON_IMAGE}:latest..."
+                            free -h | grep Mem
                             retry docker push ${PYTHON_IMAGE}:latest
+                            free -h | grep Mem
+                            
+                            echo "=== AFTER Push ==="
+                            free -h | grep Mem
                         '''
                         sh 'docker logout'
                     }
@@ -151,12 +263,19 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
+                    echo "=== BEFORE Deploy to K8s ==="
+                    free -h | grep Mem
+                    echo "---"
+                    
                     set -e
                     kubectl set image deployment/go-api go-api=${GO_IMAGE}:${IMAGE_TAG}
                     kubectl set image deployment/python-worker python-worker=${PYTHON_IMAGE}:${IMAGE_TAG}
                     kubectl rollout status deployment/go-api --timeout=120s
                     kubectl rollout status deployment/python-worker --timeout=120s
                     echo "Deployments updated successfully"
+                    
+                    echo "=== AFTER Deploy to K8s ==="
+                    free -h | grep Mem
                 '''
             }
         }
@@ -164,6 +283,10 @@ pipeline {
         stage('Smoke Tests') {
             steps {
                 sh '''
+                    echo "=== BEFORE Smoke Tests ==="
+                    free -h | grep Mem
+                    echo "---"
+                    
                     set -e
                     echo "Waiting for LoadBalancer IP..."
                     for i in {1..12}; do
@@ -177,6 +300,9 @@ pipeline {
                     done
                     echo "ERROR: Could not reach Go API after 60s - LoadBalancer IP never appeared"
                     exit 1
+                    
+                    echo "=== AFTER Smoke Tests ==="
+                    free -h | grep Mem
                 '''
             }
         }
@@ -191,10 +317,24 @@ pipeline {
         }
         always {
             sh '''
+                echo "=== FINAL MEMORY & DOCKER STATUS ==="
+                echo "Timestamp: $(date)"
+                free -h
+                echo "---"
+                echo "Active Docker containers:"
+                docker ps -a
+                echo "---"
+                echo "Docker images:"
+                docker images | head -10
+                echo "---"
+                echo "Docker storage usage:"
+                du -sh /var/lib/docker/
+                
                 echo "=== Cleaning up Docker resources ==="
                 docker logout || true
                 docker image prune -af --filter "until=24h" || true
                 docker container prune -af --filter "until=24h" || true
+                
                 echo "=== Final System Status ==="
                 df -h /var/lib/docker
                 free -h
