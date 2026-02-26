@@ -1,5 +1,3 @@
-# AWS VPC and Network Configuration
-# Used by both EC2 and EKS configurations
 
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
@@ -11,7 +9,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Public Subnet 1
 resource "aws_subnet" "primary" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.primary_subnet_cidr
@@ -23,7 +20,6 @@ resource "aws_subnet" "primary" {
   }
 }
 
-# Public Subnet 2
 resource "aws_subnet" "secondary" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.secondary_subnet_cidr
@@ -35,7 +31,6 @@ resource "aws_subnet" "secondary" {
   }
 }
 
-# Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -44,7 +39,6 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Route Table
 resource "aws_route_table" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -58,7 +52,6 @@ resource "aws_route_table" "main" {
   }
 }
 
-# Route Table Associations
 resource "aws_route_table_association" "primary" {
   subnet_id      = aws_subnet.primary.id
   route_table_id = aws_route_table.main.id

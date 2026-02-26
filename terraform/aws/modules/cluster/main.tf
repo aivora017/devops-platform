@@ -1,7 +1,4 @@
-# EKS Cluster Module
-# Contains: EKS cluster resource and cluster IAM role
 
-# IAM Role for EKS Cluster
 resource "aws_iam_role" "eks_cluster_role" {
   name = "${var.project_name}-eks-cluster-role"
 
@@ -17,13 +14,11 @@ resource "aws_iam_role" "eks_cluster_role" {
   })
 }
 
-# Attach necessary policy to cluster role
 resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
   role       = aws_iam_role.eks_cluster_role.name
 }
 
-# EKS Cluster
 resource "aws_eks_cluster" "main" {
   name            = "${var.project_name}-cluster"
   role_arn        = aws_iam_role.eks_cluster_role.arn

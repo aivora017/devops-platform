@@ -1,4 +1,3 @@
-# Output values from cluster module
 
 output "cluster_name" {
   description = "EKS cluster name"

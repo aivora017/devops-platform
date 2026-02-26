@@ -1,4 +1,3 @@
-# Input variables for cluster module
 
 variable "project_name" {
   description = "Project name"

@@ -48,7 +48,6 @@ variable "instance_type" {
   default = "t3.small"
 }
 
-# Jenkins EC2 Configuration
 variable "jenkins_ami_id" {
   description = "AMI ID for Jenkins EC2 instance (Ubuntu 22.04 LTS)"
   type        = string

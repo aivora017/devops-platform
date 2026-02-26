@@ -1,4 +1,3 @@
-# Output values from node group module
 
 output "node_group_id" {
   description = "EKS node group ID"

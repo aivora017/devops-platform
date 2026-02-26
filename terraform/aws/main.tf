@@ -11,11 +11,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-# ========== Terraform Modules for EKS ==========
-# This is the recommended deployment model for AWS EKS
-# Modules are organized for reusability and maintainability
-
-# Module 1: Security Groups for cluster and worker nodes
 module "security_groups" {
   source = "./modules/security_group"
 
@@ -24,7 +19,6 @@ module "security_groups" {
   vpc_cidr     = var.vpc_cidr
 }
 
-# Module 2: EKS Cluster
 module "eks_cluster" {
   source = "./modules/cluster"
 
@@ -34,7 +28,6 @@ module "eks_cluster" {
   security_group_ids = [module.security_groups.cluster_security_group_id]
 }
 
-# Module 3: EKS Node Group
 module "eks_node_group" {
   source = "./modules/node_group"
 
@@ -49,7 +42,6 @@ module "eks_node_group" {
   max_capacity       = var.max_capacity
 }
 
-# Module 4: EC2 Instance for Jenkins
 module "jenkins_ec2" {
   source = "./modules/ec2"
 

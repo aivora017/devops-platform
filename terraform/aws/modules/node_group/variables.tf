@@ -1,4 +1,3 @@
-# Input variables for node group module
 
 variable "project_name" {
   description = "Project name"
