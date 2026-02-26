@@ -19,6 +19,7 @@ app-go/vendor/
 .env.local
 *.swp
 *.swo
+*.log
 
 # IDE
 .vscode/

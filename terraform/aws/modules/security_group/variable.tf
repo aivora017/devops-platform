@@ -8,6 +8,11 @@ variable "vpc_id" {
   type = string
 }
 
+variable "vpc_cidr" {
+  description = "VPC CIDR block"
+  type        = string
+}
+
 variable "allowed_ssh_cidr" {
     description = "CIDR block allowed to access SSH"
     type        = string

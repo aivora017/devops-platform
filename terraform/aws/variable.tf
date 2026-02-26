@@ -25,7 +25,7 @@ variable "secondary_subnet_cidr" {
 
 variable "eks_version" {
   type    = string
-  default = "1.28"
+  default = "1.30"
 }
 
 variable "desired_capacity" {
@@ -51,13 +51,13 @@ variable "instance_type" {
 variable "jenkins_ami_id" {
   description = "AMI ID for Jenkins EC2 instance (Ubuntu 22.04 LTS)"
   type        = string
-  default     = "ami-0c802847a7dd848c0"  # Ubuntu 22.04 LTS in ap-southeast-2
+  default     = "ami-0818a4d7794d429b1"  # Ubuntu 22.04 LTS in ap-southeast-2 (updated Feb 2026)
 }
 
 variable "jenkins_instance_type" {
   description = "Instance type for Jenkins"
   type        = string
-  default     = "t3.medium"
+  default     = "t3.micro"  # Burstable instance for low resource needs
 }
 
 variable "jenkins_key_pair" {

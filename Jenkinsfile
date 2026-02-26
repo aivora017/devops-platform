@@ -21,10 +21,10 @@ pipeline {
             steps {
                 sh '''
                     echo "🔨 Building Go app..."
-                    docker build -t ${GO_IMAGE}:${IMAGE_TAG} -t ${GO_IMAGE}:latest app-go/
+                    docker build -t ${GO_IMAGE}:${IMAGE_TAG} -t ${GO_IMAGE}:latest -f docker/go/Dockerfile app-go/
                     
                     echo "🔨 Building Python worker..."
-                    docker build -t ${PYTHON_IMAGE}:${IMAGE_TAG} -t ${PYTHON_IMAGE}:latest app-python/
+                    docker build -t ${PYTHON_IMAGE}:${IMAGE_TAG} -t ${PYTHON_IMAGE}:latest -f docker/python/Dockerfile app-python/
                 '''
             }
         }
