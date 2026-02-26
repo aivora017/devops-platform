@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-worker
+  namespace: devops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-worker
+  template:
+    metadata:
+      labels:
+        app: python-worker
+    spec:
+      containers:
+      - name: python-worker
+        image: aivora017/devops-python-worker:latest
+        imagePullPolicy: Always
+        env:
+        - name: GO_API_URL
+          value: "http://go-api-service"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      restartPolicy: Always

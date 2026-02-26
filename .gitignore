@@ -10,3 +10,6 @@ override.tf
 ansible/inventory.ini
 *.retry
 ansible/ansible.log
+
+# Markdown files
+*.md

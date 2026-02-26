@@ -16,27 +16,23 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	fmt.Printf("Go API is running on port %s\n", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
-		os.Exit(1)
-	}
+	fmt.Printf("Starting Go API on port %s\n", port)
+	http.ListenAndServe(":"+port, nil)
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"service": "go-api",
-		"message": "Up and Running",
+		"status":  "running",
 	})
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+	// just return ok, worker checks this endpoint
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 func version(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"version": "1.0.0"})
+	json.NewEncoder(w).Encode(map[string]string{"version": "0.1"})
 }
