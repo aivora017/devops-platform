@@ -8,13 +8,13 @@ RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 WORKDIR /app
 
 # Copy requirements file first to leverage Docker layer caching
-COPY app-python/requirements.txt ./
+COPY requirements.txt ./
 
 # Install Python dependencies without caching to reduce image size
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application source code
-COPY app-python/ .
+COPY . .
 
 # Switch to the non-root user
 USER appuser

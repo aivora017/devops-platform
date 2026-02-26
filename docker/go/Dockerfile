@@ -8,13 +8,13 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Copy go.mod to download dependencies first (for better caching)
-COPY app-go/go.mod ./
+COPY go.mod ./
 
 # Download Go dependencies
 RUN go mod download
 
 # Copy the rest of the source code
-COPY app-go/ .
+COPY . .
 
 # Build the Go application statically
 RUN CGO_ENABLED=0 GOOS=linux go build -o go-api .
