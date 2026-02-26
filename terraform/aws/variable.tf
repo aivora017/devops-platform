@@ -45,7 +45,7 @@ variable "max_capacity" {
 
 variable "instance_type" {
   type    = string
-  default = "t3.small"
+  default = "t3.micro"
 }
 
 variable "jenkins_ami_id" {
@@ -57,7 +57,7 @@ variable "jenkins_ami_id" {
 variable "jenkins_instance_type" {
   description = "Instance type for Jenkins"
   type        = string
-  default     = "t3.micro"  # Burstable instance for low resource needs
+  default     = "t3.small"  # 2GB RAM, 2 vCPU - better for Docker builds and Jenkins plugins
 }
 
 variable "jenkins_key_pair" {
