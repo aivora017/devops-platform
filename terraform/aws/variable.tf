@@ -45,7 +45,7 @@ variable "max_capacity" {
 
 variable "instance_type" {
   type    = string
-  default = "t3.micro"
+  default = "t3.small"
 }
 
 variable "jenkins_ami_id" {
