@@ -49,17 +49,13 @@ pipeline {
                     fi
                     
                     echo "System resources OK"
+                    echo "=== Cleaning up unused Docker images ==="
+                    docker image prune -af --filter "until=72h" || true
                 '''
             }
         }
 
         stage('Run Tests') {
-            steps {
-                sh '''
-                    echo "=== Cleaning up unused Docker images before tests ==="
-                    docker image prune -af --filter "until=72h" || true
-                '''
-            }
             parallel {
                 stage('Go Tests') {
                     steps {
