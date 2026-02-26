@@ -30,8 +30,10 @@ pipeline {
                     steps {
                         dir('app-go') {
                             script {
-                                sh 'echo "Running Go tests..."'
-                                sh 'go test ./... -v'
+                                sh '''
+                                    echo "Running Go tests in Docker..."
+                                    docker run --rm -v $(pwd):/workspace -w /workspace golang:1.21 go test ./... -v
+                                '''
                             }
                         }
                     }
@@ -41,10 +43,8 @@ pipeline {
                         dir('app-python') {
                             script {
                                 sh '''
-                                    python -m venv venv
-                                    . venv/bin/activate
-                                    pip install -r requirements.txt
-                                    python -m pytest tests/ -v || true
+                                    echo "Running Python tests in Docker..."
+                                    docker run --rm -v $(pwd):/workspace -w /workspace python:3.11 bash -c "pip install -r requirements.txt && python -m pytest tests/ -v || true"
                                 '''
                             }
                         }
