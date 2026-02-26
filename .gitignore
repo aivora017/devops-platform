@@ -1,15 +1,27 @@
-# Terraform
-.terraform/
-terraform.tfstate
-terraform.tfstate.backup
-*.tfvars
-*.tfvars.json
-crash.log
-override.tf
-# Ansible
-ansible/inventory.ini
-*.retry
-ansible/ansible.log
+# Add these to .gitignore to prevent checking in unnecessary files
+terraform/**/.terraform/
+terraform/**/.terraform.lock.hcl
+terraform/**/*.tfstate
+terraform/**/*.tfstate.backup
+terraform/**/.tfstate*
 
-# Markdown files
-*.md.vscode/
+ansible/*.log
+
+app-python/.venv/
+app-python/__pycache__/
+app-python/*.pyc
+app-python/.pytest_cache/
+
+app-go/vendor/
+
+.DS_Store
+.env
+.env.local
+*.swp
+*.swo
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.md
