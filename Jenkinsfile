@@ -46,9 +46,6 @@ pipeline {
         }
 
         stage('Deploy to AWS EKS') {
-            when {
-                branch 'main'
-            }
             steps {
                 sh '''
                     echo "🚀 Deploying to AWS EKS..."
@@ -68,9 +65,6 @@ pipeline {
         }
 
         stage('Health Check') {
-            when {
-                branch 'main'
-            }
             steps {
                 sh '''
                     echo "🏥 Running health check..."
