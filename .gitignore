@@ -25,4 +25,8 @@ app-go/vendor/
 .vscode/
 .idea/
 *.iml
+
+# Exclude markdown files except documentation
 *.md
+!README.md
+!docs/**/*.md
