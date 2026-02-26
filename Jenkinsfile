@@ -31,8 +31,8 @@ pipeline {
                         dir('app-go') {
                             script {
                                 sh '''
-                                    echo "Running Go tests in Docker..."
-                                    docker run --rm -v $(pwd):/workspace -w /workspace golang:1.22 go test ./... -v
+                                    echo "Running Go tests in Docker (Alpine lightweight)..."
+                                    docker run --rm -v $(pwd):/workspace -w /workspace golang:1.22-alpine go test ./... -v
                                 '''
                             }
                         }
@@ -43,11 +43,11 @@ pipeline {
                         dir('app-python') {
                             script {
                                 sh '''
-                                    echo "Running Python tests in Docker..."
+                                    echo "Running Python tests in Docker (Alpine lightweight)..."
                                     docker run --rm \
                                     -v $(pwd):/workspace \
-                                    -w /workspace python:3.11 \
-                                     bash -c "pip install -r requirements.txt && python -m pytest tests/ -v || true"
+                                    -w /workspace python:3.11-alpine \
+                                    bash -c "pip install -r requirements.txt && python -m pytest tests/ -v || true"
                                 '''
                             }
                         }
