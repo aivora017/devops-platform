@@ -1271,7 +1271,7 @@ strategy:
 
 ---
 
-**Last Updated:** February 26, 2026  
+**Last Updated:** February 27, 2026  
 **Author:** Sourav (DevOps Fresher)  
 **Total Issues Documented:** 10 major + detailed solutions  
 **Lessons Learned:** 40+ technical insights

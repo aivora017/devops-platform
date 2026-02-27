@@ -51,10 +51,10 @@ This document explains the complete architecture of the DevOps Platform, how all
 │  │  │  │ │ (1024Mi RAM)  │ │    │ │ (1024Mi RAM) │ │   │     │                                   │
 │  │  │  │ └───────────────┘ │    │ └──────────────┘ │   │     │                                   │
 │  │  │  │                   │    │ ┌──────────────┐ │   │     │                                   │
-│  │  │  │ ┌───────────────┐ │    │ │ python-     │ │   │     │                                   │
-│  │  │  │ │ Metrics srvr  │ │    │ │ worker pod  │ │   │     │                                   │
-│  │  │  │ │ (prometheus)  │ │    │ │ (512Mi RAM) │ │   │     │                                   │
-│  │  │  │ └───────────────┘ │    │ └──────────────┘ │   │     │                                   │
+│  │  │                   │    │ │ python-     │ │   │     │                                   │
+│  │  │                   │    │ │ worker pod  │ │   │     │                                   │
+│  │  │                   │    │ │ (512Mi RAM) │ │   │     │                                   │
+│  │  │                   │    │ └──────────────┘ │   │     │                                   │
 │  │  │  │                   │    │                  │   │     │                                   │
 │  │  │  └───────────────────┘    └──────────────────┘   │     │                                   │
 │  │  │           ⬆                      ⬆               │     │                                   │
@@ -73,7 +73,7 @@ This document explains the complete architecture of the DevOps Platform, how all
 │  │  │  go-api-hpa                                          │  │                                   │
 │  │  │  • Min replicas: 1, Max: 5                          │  │                                   │
 │  │  │  • Target CPU: 70%                                 │  │                                   │
-│  │  │  • Metrics: From prometheus (every 30s)            │  │                                   │
+│  │  │  • Metrics: From Kubernetes metrics-server (30s)   │  │                                   │
 │  │  │                                                       │  │                                   │
 │  │  │  python-worker-hpa                                  │  │                                   │
 │  │  │  • Min replicas: 1, Max: 3                          │  │                                   │
@@ -785,5 +785,5 @@ docker logs jenkins
 
 ---
 
-**Last Updated:** February 26, 2026  
+**Last Updated:** February 27, 2026  
 **Author:** Sourav (DevOps Fresher)

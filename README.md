@@ -73,9 +73,38 @@ devops-platform/
 ✓ Terraform installed
 ✓ kubectl installed
 ✓ Docker installed (optional, for local testing)
+✓ Ansible installed (if using complete deployment script)
 ```
 
-### Deploy in 3 Steps
+### Option 1: Automated Deployment (Recommended)
+
+We provide shell scripts to automate the entire deployment process.
+
+**Fast Deploy (EKS Only):**
+```bash
+git clone https://github.com/aivora017/devops-platform.git
+cd devops-platform
+aws configure  # Set your AWS credentials
+bash scripts/deploy-aws.sh
+```
+
+**Complete Deploy (Everything including Jenkins):**
+```bash
+git clone https://github.com/aivora017/devops-platform.git
+cd devops-platform
+aws configure  # Set your AWS credentials
+bash scripts/deploy-complete.sh
+```
+
+The complete deployment script handles:
+- ✅ Terraform infrastructure provisioning
+- ✅ Jenkins EC2 instance setup
+- ✅ Ansible configuration of Jenkins
+- ✅ EKS cluster creation
+- ✅ Application deployment to Kubernetes
+- ✅ Auto-scaling configuration
+
+### Option 2: Manual Deployment (Step-by-Step)
 
 **Step 1: Clone & Configure**
 ```bash
@@ -301,5 +330,5 @@ Open source - feel free to use for learning and development
 ---
 
 **Status**: Production Ready ✅  
-**Last Updated**: February 26, 2026  
+**Last Updated**: February 27, 2026  
 **Author**: Sourav (DevOps Fresher)

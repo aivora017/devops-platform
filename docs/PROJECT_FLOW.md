@@ -847,5 +847,5 @@ kubectl describe hpa go-api-hpa -n devops
 
 ---
 
-**Last Updated:** February 26, 2026  
+**Last Updated:** February 27, 2026  
 **Author:** Sourav (DevOps Fresher)
