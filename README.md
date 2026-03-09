@@ -185,7 +185,7 @@ Users can access new endpoint immediately!
 
 **Load Test Results (Continuous 390 seconds):**
 - Total Requests: 31,400+
-- Throughput: 80 requests/sec
+- Throughput: 100 requests/sec
 - Pod Scaling: Auto-scaled to handle load
 - Failures: **0**
 - Downtime: **0**
