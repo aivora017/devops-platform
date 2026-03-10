@@ -1,0 +1,88 @@
+replicas: 1
+
+adminPassword: "admin123"
+
+persistence:
+  enabled: false
+  size: 5Gi
+  storageClassName: gp2
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-operated.monitoring.svc:9090
+        access: proxy
+        editable: true
+        version: 1
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: default
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+
+dashboards:
+  default:
+    kubernetes-cluster:
+      gnetId: 7249
+      revision: 1
+      datasource: Prometheus
+    
+    kubernetes-pods:
+      gnetId: 6417
+      revision: 1
+      datasource: Prometheus
+    
+    kubernetes-nodes:
+      gnetId: 11074
+      revision: 1
+      datasource: Prometheus
+    
+    node-exporter:
+      gnetId: 1860
+      revision: 23
+      datasource: Prometheus
+
+env:
+  GF_SECURITY_ADMIN_USER: admin
+  GF_SECURITY_ADMIN_PASSWORD: admin123
+  GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+  GF_USERS_ALLOW_SIGN_UP: false
+
+ingress:
+  enabled: false
+
+service:
+  type: LoadBalancer
+
+rbac:
+  pspEnabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+grafana.ini:
+  auth.anonymous:
+    enabled: true
+    org_role: Viewer
+  
+  paths:
+    data: /var/lib/grafana/
+    logs: /var/log/grafana
+    plugins: /var/lib/grafana/plugins
+    provisioning: /etc/grafana/provisioning

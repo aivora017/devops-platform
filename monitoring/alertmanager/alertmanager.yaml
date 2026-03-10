@@ -1,0 +1,87 @@
+global:
+  resolve_timeout: 5m
+  slack_api_url: ''
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+templates:
+  - /etc/alertmanager/config/*.tmpl
+
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 12h
+  
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 4h
+      continue: true
+
+    - match:
+        severity: warning
+      receiver: 'warning'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 8h
+      continue: true
+
+    - match:
+        alertname: 'PodCrashLooping'
+      receiver: 'critical'
+      group_wait: 5s
+      group_interval: 1m
+      repeat_interval: 2h
+      continue: true
+
+    - match:
+        alertname: 'DeploymentReplicasMismatch'
+      receiver: 'warning'
+      group_wait: 10s
+      group_interval: 10m
+      repeat_interval: 6h
+      continue: true
+
+    - match_re:
+        alertname: 'High.*Cost'
+      receiver: 'cost-alert'
+      group_wait: 5m
+      group_interval: 30m
+      repeat_interval: 24h
+      continue: true
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']
+
+  - source_match_re:
+      severity: 'critical|warning'
+    target_match:
+      alertname: 'InfoAlert'
+    equal: ['cluster', 'service']
+
+receivers:
+  - name: 'default'
+    webhook_configs: []
+
+  - name: 'critical'
+    webhook_configs:
+      - url: 'http://localhost:5555/'
+        send_resolved: true
+
+  - name: 'warning'
+    webhook_configs:
+      - url: 'http://localhost:5556/'
+        send_resolved: true
+
+  - name: 'cost-alert'
+    webhook_configs:
+      - url: 'http://localhost:5557/'
+        send_resolved: true

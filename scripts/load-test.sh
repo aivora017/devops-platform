@@ -1,62 +1,36 @@
 #!/bin/bash
 
-##############################################################################
-# Load Test Script for DevOps Platform
-# 
-# Purpose: Validate system can handle concurrent load and auto-scaling
-# 
-# Usage: 
-#   ./scripts/load-test.sh
-# 
-# Prerequisites:
-#   - kubectl configured and connected to EKS cluster
-#   - go-api service deployed with LoadBalancer in devops namespace
-#   - jq installed for JSON parsing (optional, for formatting)
-##############################################################################
-
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Configuration
 NAMESPACE="devops"
 SERVICE_NAME="go-api-service"
 NUM_REQUESTS=1000
 CONCURRENT_BATCH=10
-TIMEOUT=300  # 5 minutes
 RESULTS_FILE="/tmp/load-test-results-$(date +%Y%m%d-%H%M%S).txt"
+STATUS_FILE="/tmp/load-test-status-$(date +%Y%m%d-%H%M%S).txt"
 
-# Function to print section headers
 print_header() {
-    echo -e "\n${BLUE}════════════════════════════════════════════════════════════${NC}"
-    echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}\n"
+    echo
+    echo "$1"
+    echo "$(printf '%0.s-' {1..40})"
 }
 
-# Function to print status
 print_status() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo "$1"
 }
 
-# Function to print error
 print_error() {
-    echo -e "${RED}✗${NC} $1"
+    echo "$1" >&2
 }
 
-# Function to print warning
 print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo "$1"
 }
 
-# Cleanup function
 cleanup() {
     print_header "Load Test Complete"
     echo "Results saved to: $RESULTS_FILE"
+    rm -f "$STATUS_FILE"
     echo ""
     echo "To view results:"
     echo "  cat $RESULTS_FILE"
@@ -64,12 +38,10 @@ cleanup() {
 
 trap cleanup EXIT
 
-# Start test
 print_header "DevOps Platform - Load Test"
 
-# Get load balancer endpoint
 print_status "Fetching LoadBalancer endpoint..."
-LB_ENDPOINT=$(kubectl get svc $SERVICE_NAME -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+LB_ENDPOINT=$(kubectl get svc "$SERVICE_NAME" -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
 
 if [ -z "$LB_ENDPOINT" ]; then
     print_error "Could not get LoadBalancer endpoint. Make sure service is deployed and has external IP/hostname."
@@ -81,12 +53,10 @@ fi
 
 print_status "LoadBalancer Endpoint: $LB_ENDPOINT"
 
-# Get current pod count before test
 print_status "Checking initial pod count..."
 INITIAL_PODS=$(kubectl get pods -n $NAMESPACE -l app=go-api --no-headers | wc -l)
 print_status "Initial replica count: $INITIAL_PODS"
 
-# Start test
 print_header "Sending Load"
 
 echo "Test Configuration:" | tee -a "$RESULTS_FILE"
@@ -98,21 +68,15 @@ echo "" | tee -a "$RESULTS_FILE"
 echo "Starting load test at $(date '+%Y-%m-%d %H:%M:%S')" | tee -a "$RESULTS_FILE"
 echo "" | tee -a "$RESULTS_FILE"
 
-# Counters
-SUCCESS=0
-FAILED=0
 START_TIME=$(date +%s%N)
 
-# Send requests in batches
+: > "$STATUS_FILE"
+
 for ((i=1; i<=$NUM_REQUESTS; i+=$CONCURRENT_BATCH)); do
     for ((j=0; j<$CONCURRENT_BATCH && (i+j)<=$NUM_REQUESTS; j++)); do
         (
             RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -m 10 "http://$LB_ENDPOINT/" 2>/dev/null || echo "000")
-            if [ "$RESPONSE" = "200" ]; then
-                ((SUCCESS++))
-            else
-                ((FAILED++))
-            fi
+            echo "$RESPONSE" >> "$STATUS_FILE"
         ) &
     done
     wait
@@ -128,12 +92,13 @@ END_TIME=$(date +%s%N)
 DURATION_NS=$((END_TIME - START_TIME))
 DURATION_S=$(echo "scale=2; $DURATION_NS / 1000000000" | bc)
 
-# Get pod count after test
+SUCCESS=$(grep -c '^200$' "$STATUS_FILE" || true)
+FAILED=$((NUM_REQUESTS - SUCCESS))
+
 FINAL_PODS=$(kubectl get pods -n $NAMESPACE -l app=go-api --no-headers | wc -l)
 
 print_header "Load Test Results"
 
-# Display results
 echo "Test Summary:" | tee -a "$RESULTS_FILE"
 echo "  Timestamp: $(date '+%Y-%m-%d %H:%M:%S')" | tee -a "$RESULTS_FILE"
 echo "  Total Requests Sent: $NUM_REQUESTS" | tee -a "$RESULTS_FILE"
@@ -150,23 +115,20 @@ echo "  Final Pods: $FINAL_PODS" | tee -a "$RESULTS_FILE"
 echo "  Pods Scaled: $((FINAL_PODS - INITIAL_PODS)) (from $INITIAL_PODS to $FINAL_PODS)" | tee -a "$RESULTS_FILE"
 echo "" | tee -a "$RESULTS_FILE"
 
-# HPA Status
 print_status "HPA Status:"
 kubectl describe hpa go-api-hpa -n $NAMESPACE 2>/dev/null | tail -10 | tee -a "$RESULTS_FILE" || print_warning "HPA not found or error retrieving status"
 
-# Pod Status
 echo "" | tee -a "$RESULTS_FILE"
 echo "Final Pod Status:" | tee -a "$RESULTS_FILE"
 kubectl get pods -n $NAMESPACE -l app=go-api --no-headers | tee -a "$RESULTS_FILE"
 
-# Final assessment
 echo "" | tee -a "$RESULTS_FILE"
 if [ $FAILED -eq 0 ]; then
-    print_status "All requests successful! ✓"
-    echo "Status: PASSED ✓" | tee -a "$RESULTS_FILE"
+    print_status "All requests successful"
+    echo "Status: passed" | tee -a "$RESULTS_FILE"
 else
     print_warning "Some requests failed"
-    echo "Status: WARNING - $FAILED failures" | tee -a "$RESULTS_FILE"
+    echo "Status: warning - $FAILED failures" | tee -a "$RESULTS_FILE"
 fi
 
 print_status "Full results written to: $RESULTS_FILE"

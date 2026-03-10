@@ -45,6 +45,8 @@ kind: Service
 metadata:
   name: go-api-service
   namespace: devops
+  labels:
+    app: go-api
 spec:
   type: LoadBalancer
   ports:

@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: eks-false-positives-suppression
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+  - name: eks-managed-control-plane
+    interval: 30s
+    rules:
+    - alert: KubeSchedulerDown
+      expr: "vector(0)"
+      for: 0m
+      labels:
+        severity: none
+      annotations:
+        summary: "Suppressed - EKS scheduler runs on managed control plane"
+        description: "Alert suppressed for EKS deployments where kube-scheduler is managed by AWS and not scrapable from cluster nodes"
+    
+    - alert: KubeControllerManagerDown
+      expr: "vector(0)"
+      for: 0m
+      labels:
+        severity: none
+      annotations:
+        summary: "Suppressed - EKS controller-manager runs on managed control plane"
+        description: "Alert suppressed for EKS deployments where kube-controller-manager is managed by AWS and not scrapable from cluster nodes"

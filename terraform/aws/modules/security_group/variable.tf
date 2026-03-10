@@ -1,11 +1,11 @@
 variable "project_name" {
-    description = "Project name for tagging"
-    type = string
-  
+  description = "Project name for tagging"
+  type        = string
 }
+
 variable "vpc_id" {
   description = "VPC ID where the security group will be created"
-  type = string
+  type        = string
 }
 
 variable "vpc_cidr" {
@@ -14,9 +14,8 @@ variable "vpc_cidr" {
 }
 
 variable "allowed_ssh_cidr" {
-    description = "CIDR block allowed to access SSH"
-    type        = string
-    default     = "0.0.0.0/0"
-  
+  description = "CIDR block allowed to access SSH"
+  type        = string
+  default     = "0.0.0.0/0"
 }
 

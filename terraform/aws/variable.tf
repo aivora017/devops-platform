@@ -1,73 +1,83 @@
 variable "aws_region" {
-  type    = string
-  default = "ap-southeast-2"
+  description = "AWS region"
+  type        = string
+  default     = "ap-southeast-2"
 }
 
 variable "project_name" {
-  type    = string
-  default = "devops-platform"
+  description = "Project name"
+  type        = string
+  default     = "devops-platform"
 }
 
 variable "vpc_cidr" {
-  type    = string
-  default = "10.0.0.0/16"
+  description = "VPC CIDR block"
+  type        = string
+  default     = "10.0.0.0/16"
 }
 
 variable "primary_subnet_cidr" {
-  type    = string
-  default = "10.0.1.0/24"
+  description = "Primary subnet CIDR block"
+  type        = string
+  default     = "10.0.1.0/24"
 }
 
 variable "secondary_subnet_cidr" {
-  type    = string
-  default = "10.0.2.0/24"
+  description = "Secondary subnet CIDR block"
+  type        = string
+  default     = "10.0.2.0/24"
 }
 
 variable "eks_version" {
-  type    = string
-  default = "1.30"
+  description = "EKS version"
+  type        = string
+  default     = "1.30"
 }
 
 variable "desired_capacity" {
-  type    = number
-  default = 2
+  description = "Desired number of worker nodes"
+  type        = number
+  default     = 2
 }
 
 variable "min_capacity" {
-  type    = number
-  default = 1
+  description = "Minimum number of worker nodes"
+  type        = number
+  default     = 1
 }
 
 variable "max_capacity" {
-  type    = number
-  default = 3
+  description = "Maximum number of worker nodes"
+  type        = number
+  default     = 3
 }
 
 variable "instance_type" {
-  type    = string
-  default = "t3.small"
+  description = "Worker node instance type"
+  type        = string
+  default     = "t3.small"
 }
 
 variable "jenkins_ami_id" {
-  description = "AMI ID for Jenkins EC2 instance (Ubuntu 22.04 LTS)"
+  description = "Jenkins AMI ID"
   type        = string
-  default     = "ami-0818a4d7794d429b1"  # Ubuntu 22.04 LTS in ap-southeast-2 (updated Feb 2026)
+  default     = "ami-0818a4d7794d429b1"
 }
 
 variable "jenkins_instance_type" {
-  description = "Instance type for Jenkins"
+  description = "Jenkins instance type"
   type        = string
-  default     = "t3.small"  # 2GB RAM, 2 vCPU - better for Docker builds and Jenkins plugins
+  default     = "t3.small"
 }
 
 variable "jenkins_key_pair" {
-  description = "SSH key pair name for Jenkins EC2 instance"
+  description = "Jenkins EC2 key pair name"
   type        = string
   default     = "devops-platform"
 }
 
 variable "jenkins_root_volume_size" {
-  description = "Root volume size for Jenkins in GB"
+  description = "Jenkins root volume size in GB"
   type        = number
   default     = 50
 }

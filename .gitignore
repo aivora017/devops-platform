@@ -1,6 +1,4 @@
-# Add these to .gitignore to prevent checking in unnecessary files
 terraform/**/.terraform/
-terraform/**/.terraform.lock.hcl
 terraform/**/*.tfstate
 terraform/**/*.tfstate.backup
 terraform/**/.tfstate*
@@ -26,11 +24,5 @@ app-go/vendor/
 .idea/
 *.iml
 
-# Exclude markdown files except documentation
-*.md
-!README.md
-!docs/**/*.md
-!GITHUB_RESTRUCTURE_GUIDE.md
-!GITHUB_PROFILE_README_TEMPLATE.md
-!JOB_APPLICATION_INTERVIEW_GUIDE.md
-!QUICK_START.md
+load-test-results/
+.jenkins-credentials

@@ -1,33 +1,23 @@
 #!/bin/bash
 
-# Complete deployment script for fresh environment
-# Sets up: Terraform → Jenkins EC2 → Ansible Configuration → EKS Cluster → App Deployment
-# Usage: ./scripts/deploy-complete.sh
-
 set -e
 
-BOLD='\033[1m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
 log_section() {
-    echo -e "\n${BOLD}${BLUE}=========================================${NC}"
-    echo -e "${BOLD}${BLUE}$1${NC}"
-    echo -e "${BOLD}${BLUE}=========================================${NC}\n"
+    echo
+    echo "$1"
+    echo "$(printf '%0.s-' {1..40})"
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo "OK: $1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo "WARN: $1"
 }
 
 log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo "INFO: $1"
 }
 
 # Check prerequisites
@@ -35,7 +25,7 @@ log_section "Checking Prerequisites"
 
 for tool in aws kubectl docker terraform ansible; do
     if ! command -v $tool &>/dev/null; then
-        echo -e "${RED}❌ Required tool not found: $tool${NC}"
+        echo "ERROR: missing required tool: $tool"
         exit 1
     fi
 done
@@ -44,7 +34,7 @@ log_success "All required tools found"
 # Verify AWS credentials
 log_info "Verifying AWS credentials..."
 if ! aws sts get-caller-identity &>/dev/null; then
-    echo "❌ AWS credentials not configured. Run: aws configure"
+    echo "ERROR: AWS credentials not configured. Run: aws configure"
     exit 1
 fi
 log_success "AWS credentials valid"
@@ -84,7 +74,7 @@ retry_count=0
 while ! nc -z $JENKINS_IP 22 2>/dev/null; do
     retry_count=$((retry_count + 1))
     if [ $retry_count -ge $max_retries ]; then
-        echo "❌ Timeout waiting for Jenkins SSH"
+        echo "ERROR: timeout waiting for Jenkins SSH"
         exit 1
     fi
     echo -ne "Waiting... ${retry_count}/${max_retries}\r"
@@ -134,66 +124,47 @@ done
 
 log_success "Jenkins is configured and accessible"
 
-# Step 4: Configure EKS access
-log_section "Step 4: Configuring EKS Access"
-
-log_info "Running: $CONFIGURE_KUBECTL"
-eval "$CONFIGURE_KUBECTL"
-log_success "kubectl configured for EKS cluster"
-
-# Step 5: Deploy to EKS
-log_section "Step 5: Deploying Applications to EKS"
-
-log_info "Creating devops namespace..."
-kubectl create namespace devops --dry-run=client -o yaml | kubectl apply -f -
-
-log_info "Deploying applications from k8s/aws/..."
-kubectl apply -f k8s/aws/namespace.yaml
-kubectl apply -f k8s/aws/go-api-deployment.yaml
-kubectl apply -f k8s/aws/python-worker-deployment.yaml
-
-log_info "Waiting for deployments to be ready..."
-kubectl rollout status deployment/go-api -n devops --timeout=5m || true
-kubectl rollout status deployment/python-worker -n devops --timeout=5m || true
-
-log_success "Applications deployed to EKS"
-
-# Final Summary
-log_section "🎉 Deployment Complete!"
+# Final Summary (manual continuation)
+log_section "Jenkins setup complete"
 
 cat << EOF
-${BOLD}Infrastructure Summary:${NC}
+Infrastructure Summary
 
-${BOLD}Jenkins:${NC}
+Jenkins
   URL: http://$JENKINS_IP:8080
   IP: $JENKINS_IP
   Instance ID: $JENKINS_INSTANCE_ID
   SSH: ssh -i ~/.ssh/devops-platform ubuntu@$JENKINS_IP
 
-${BOLD}EKS Cluster:${NC}
+EKS Cluster
   Name: $CLUSTER_NAME
   Region: ap-southeast-2
 
-${BOLD}Next Steps:${NC}
-  1. Access Jenkins: http://$JENKINS_IP:8080
-     - Get initial password with: ssh -i ~/.ssh/devops-platform ubuntu@$JENKINS_IP
-     - Then: sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-  
-  2. Check application deployments:
-     kubectl get deployments -n devops
-     kubectl get pods -n devops
-     kubectl get svc -n devops
-  
-  3. View logs:
-     kubectl logs -f deployment/go-api -n devops
-     kubectl logs -f deployment/python-worker -n devops
+Manual Next Steps
+  1. Open Jenkins and finish setup:
+      http://$JENKINS_IP:8080
 
-${BOLD}To destroy all infrastructure:${NC}
+  2. Log in and create/configure pipeline manually.
+
+  3. Configure local kubectl access when needed:
+      $CONFIGURE_KUBECTL
+
+  4. Deploy apps manually when ready:
+      kubectl apply -f k8s/aws/namespace.yaml
+      kubectl apply -f k8s/aws/go-api-deployment.yaml
+      kubectl apply -f k8s/aws/python-worker-deployment.yaml
+
+  5. Verify deployment status:
+      kubectl get deployments -n devops
+      kubectl get pods -n devops
+      kubectl get svc -n devops
+
+To destroy all infrastructure
   cd terraform/aws && terraform destroy -auto-approve && cd ../..
 
-${BOLD}Terraform outputs:${NC}
+Terraform outputs
   cd terraform/aws && terraform output
 
 EOF
 
-log_success "Deployment script completed successfully!"
+log_success "Deployment script finished after Ansible. Continue manually in Jenkins."

@@ -20,10 +20,10 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 }
 
 resource "aws_eks_cluster" "main" {
-  name            = "${var.project_name}-cluster"
-  role_arn        = aws_iam_role.eks_cluster_role.arn
-  version         = var.eks_version
-  
+  name     = "${var.project_name}-cluster"
+  role_arn = aws_iam_role.eks_cluster_role.arn
+  version  = var.eks_version
+
   vpc_config {
     subnet_ids              = var.subnet_ids
     security_group_ids      = var.security_group_ids

@@ -7,8 +7,8 @@
   vars:
     jenkins_port: 8080
     docker_users:
-        - ubuntu
-        - jenkins
+      - ubuntu
+      - jenkins
     java_package: openjdk-21-jdk
 
   tasks:
@@ -17,13 +17,13 @@
         name: python3
         state: present
 
-    - name: update apt cache and upgrade packages
+    - name: Update apt cache and upgrade packages
       apt:
         update_cache: true
         upgrade: true
         cache_valid_time: 3600
 
-    - name: No root SSH login
+    - name: Disable root SSH login
       lineinfile:
         path: /etc/ssh/sshd_config
         regexp: '^PermitRootLogin'
@@ -31,17 +31,13 @@
         state: present
       notify: restart ssh
 
-    - name: Check if Java is installed
-      shell: dpkg -l | grep openjdk-21
-      register: java_installed
-      failed_when: false
-      changed_when: false
-
-    - name: Install Java
+    - name: Install Java and Docker
       apt:
-        name: "{{ java_package }}"
+        name:
+          - "{{ java_package }}"
+          - docker.io
         state: present
-      when: java_installed.rc != 0
+        update_cache: true
 
     - name: Verify Java installation
       command: java -version
@@ -52,44 +48,27 @@
       debug:
         msg: "Java version installed: {{ java_version.stderr }}"
 
-    - name: Check if Jenkins is installed
-      shell: dpkg -l | grep jenkins
-      register: jenkins_installed
-      failed_when: false
-      changed_when: false
+    - name: Configure Jenkins apt repository
+      copy:
+        dest: /etc/apt/sources.list.d/jenkins.list
+        content: "deb [trusted=yes] https://pkg.jenkins.io/debian-stable binary/\n"
+        mode: '0644'
 
-    - name: Add Jenkins repository and install
-      shell: |
-        echo "deb [trusted=yes] https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list
-        apt-get update
-        apt-get install -y jenkins
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: true
       retries: 3
       delay: 5
       register: jenkins_install
       until: jenkins_install is succeeded
-      when: jenkins_installed.rc != 0
 
-    - name: Check if Docker is installed
-      shell: dpkg -l | grep docker.io
-      register: docker_installed
-      failed_when: false
-      changed_when: false
-
-    - name: Install Docker
-      shell: |
-        apt-get update
-        apt-get install -y docker.io
-      retries: 3
-      delay: 5
-      register: docker_install
-      until: docker_install is succeeded
-      when: docker_installed.rc != 0
-
-    - name: Start and enable Jenkins service
+    - name: Start and enable Jenkins
       service:
         name: jenkins
         state: started
-        enabled: yes
+        enabled: true
       register: jenkins_start
       retries: 3
       delay: 5
@@ -99,10 +78,10 @@
       user:
         name: "{{ item }}"
         groups: docker
-        append: yes
+        append: true
       loop: "{{ docker_users }}"
 
-    - name: Start and enable Docker service
+    - name: Start and enable Docker
       service:
         name: docker
         state: started
@@ -135,7 +114,7 @@
     - name: Print Jenkins information (first-time setup)
       debug:
         msg:
-          - "Jenkins installed successfully!"
+          - "Jenkins installed successfully"
           - "Jenkins URL: http://{{ ansible_host }}:{{ jenkins_port }}"
           - "Username: admin"
           - "Initial admin password: {{ jenkins_password.content | b64decode }}"

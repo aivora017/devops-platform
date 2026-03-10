@@ -1,5 +1,3 @@
----
-# Horizontal Pod Autoscaler for Go API
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -33,8 +31,6 @@ spec:
         value: 100
         periodSeconds: 15
 
----
-# Horizontal Pod Autoscaler for Python Worker
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

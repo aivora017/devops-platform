@@ -20,10 +20,10 @@ pipeline {
         stage('Build Images') {
             steps {
                 sh '''
-                    echo "🔨 Building Go app..."
+                    echo "Building Go image"
                     docker build -t ${GO_IMAGE}:${IMAGE_TAG} -t ${GO_IMAGE}:latest -f docker/go/Dockerfile app-go/
                     
-                    echo "🔨 Building Python worker..."
+                    echo "Building Python worker image"
                     docker build -t ${PYTHON_IMAGE}:${IMAGE_TAG} -t ${PYTHON_IMAGE}:latest -f docker/python/Dockerfile app-python/
                 '''
             }
@@ -33,7 +33,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                        echo "📤 Pushing images to Docker Hub..."
+                        echo "Pushing images to Docker Hub"
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push ${GO_IMAGE}:${IMAGE_TAG}
                         docker push ${GO_IMAGE}:latest
@@ -48,16 +48,14 @@ pipeline {
         stage('Deploy to AWS EKS') {
             steps {
                 sh '''
-                    echo "🚀 Deploying to AWS EKS..."
-                    
-                    # Create namespace if it doesn't exist
-                    kubectl create namespace devops --dry-run=client -o yaml | kubectl apply -f -
-                    
-                    # Update image and force rollout
-                    kubectl set image deployment/go-api go-api=${GO_IMAGE}:${IMAGE_TAG} -n devops --record || exit 0
-                    kubectl set image deployment/python-worker python-worker=${PYTHON_IMAGE}:${IMAGE_TAG} -n devops --record || exit 0
-                    
-                    echo "⏳ Waiting for deployments..."
+                    echo "Deploying to EKS"
+                    kubectl apply -f k8s/aws/namespace.yaml
+                    kubectl apply -f k8s/aws/go-api-deployment.yaml
+                    kubectl apply -f k8s/aws/python-worker-deployment.yaml
+                    kubectl apply -f k8s/aws/hpa.yaml
+                    kubectl set image deployment/go-api go-api=${GO_IMAGE}:${IMAGE_TAG} -n devops
+                    kubectl set image deployment/python-worker python-worker=${PYTHON_IMAGE}:${IMAGE_TAG} -n devops
+                    echo "Waiting for rollouts"
                     kubectl rollout status deployment/go-api -n devops --timeout=2m || true
                     kubectl rollout status deployment/python-worker -n devops --timeout=2m || true
                 '''
@@ -67,23 +65,23 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
-                    echo "🏥 Running health check..."
+                    echo "Running health check"
                     sleep 10
                     
                     GO_POD=$(kubectl get pods -n devops -l app=go-api -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
                     if [ ! -z "$GO_POD" ]; then
-                        echo "✓ Go app pod running: $GO_POD"
+                        echo "Go API pod: $GO_POD"
                         kubectl logs $GO_POD -n devops | head -5 || true
                     else
-                        echo "⚠ No Go app pod found yet"
+                        echo "Go API pod not found yet"
                     fi
                     
                     PYTHON_POD=$(kubectl get pods -n devops -l app=python-worker -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
                     if [ ! -z "$PYTHON_POD" ]; then
-                        echo "✓ Python worker pod running: $PYTHON_POD"
+                        echo "Python worker pod: $PYTHON_POD"
                         kubectl logs $PYTHON_POD -n devops | head -5 || true
                     else
-                        echo "⚠ No Python worker pod found yet"
+                        echo "Python worker pod not found yet"
                     fi
                 '''
             }
@@ -92,10 +90,10 @@ pipeline {
 
     post {
         always {
-            echo "✅ Build pipeline completed"
+            echo "Build pipeline completed"
         }
         failure {
-            echo "❌ Pipeline failed - check logs in Jenkins"
+            echo "Pipeline failed"
         }
     }
 }

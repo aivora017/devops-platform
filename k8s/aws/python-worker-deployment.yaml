@@ -17,9 +17,14 @@ spec:
       - name: python-worker
         image: aivora017/devops-python-worker:latest
         imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: metrics
         env:
         - name: GO_API_URL
           value: "http://go-api-service"
+        - name: METRICS_PORT
+          value: "8000"
         resources:
           requests:
             memory: "128Mi"
@@ -28,3 +33,20 @@ spec:
             memory: "256Mi"
             cpu: "500m"
       restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-worker-service
+  namespace: devops
+  labels:
+    app: python-worker
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: metrics
+    protocol: TCP
+    name: metrics
+  selector:
+    app: python-worker
