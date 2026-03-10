@@ -31,6 +31,8 @@ spec:
         value: 100
         periodSeconds: 15
 
+---
+
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

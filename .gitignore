@@ -24,5 +24,4 @@ app-go/vendor/
 .idea/
 *.iml
 
-load-test-results/
 .jenkins-credentials

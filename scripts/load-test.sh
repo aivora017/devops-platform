@@ -2,11 +2,15 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+RESULTS_DIR="$PROJECT_ROOT/load-test-results"
+
 NAMESPACE="devops"
 SERVICE_NAME="go-api-service"
 NUM_REQUESTS=1000
 CONCURRENT_BATCH=10
-RESULTS_FILE="/tmp/load-test-results-$(date +%Y%m%d-%H%M%S).txt"
+RESULTS_FILE="$RESULTS_DIR/load-test-results-$(date +%Y%m%d-%H%M%S).txt"
 STATUS_FILE="/tmp/load-test-status-$(date +%Y%m%d-%H%M%S).txt"
 
 print_header() {
@@ -37,6 +41,8 @@ cleanup() {
 }
 
 trap cleanup EXIT
+
+mkdir -p "$RESULTS_DIR"
 
 print_header "DevOps Platform - Load Test"
 
@@ -125,10 +131,10 @@ kubectl get pods -n $NAMESPACE -l app=go-api --no-headers | tee -a "$RESULTS_FIL
 echo "" | tee -a "$RESULTS_FILE"
 if [ $FAILED -eq 0 ]; then
     print_status "All requests successful"
-    echo "Status: passed" | tee -a "$RESULTS_FILE"
+    echo "Status: PASSED" | tee -a "$RESULTS_FILE"
 else
     print_warning "Some requests failed"
-    echo "Status: warning - $FAILED failures" | tee -a "$RESULTS_FILE"
+    echo "Status: WARNING - $FAILED failures" | tee -a "$RESULTS_FILE"
 fi
 
 print_status "Full results written to: $RESULTS_FILE"

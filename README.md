@@ -97,6 +97,48 @@ bash scripts/load-test.sh
 
 For fixed-rate testing, a containerized Vegeta run is also supported.
 
+### Featured Heavy Run (Interview Proof)
+
+The latest heavy run artifact is included in the repository:
+
+- profile: 1000 requests/second for 300 seconds
+- total requests: 300,000
+- throughput: 979.41 requests/second
+- successful responses: 293,991 (`98.00%` success ratio)
+- failed/timeouts: 6,009
+- mean latency: 1.637s
+- p95 latency: 6.543s
+- max latency: 30.091s
+- HPA scale events observed: `1 -> 2 -> 3 -> 2 -> 1`
+
+Raw report with Vegeta output and HPA events:
+
+- `load-test-results/load-test-results-20260310-heavy-vegeta-1000rps-300s.txt`
+
+Additional baseline smoke test report:
+
+- `load-test-results/load-test-results-20260310-183653.txt`
+
+### Observability Evidence
+
+Interview-focused screenshot map:
+
+1. `docs/screenshots/ideal-cluster-state.png`: ideal cluster state in Grafana
+2. `docs/screenshots/prometheus-target-health.png`: Prometheus target health status
+3. `docs/screenshots/prometheus-rule-health.png`: Prometheus rule health status
+4. `docs/screenshots/prometheus-alerts.png`: active alerts in Prometheus
+5. `docs/screenshots/baseline-load-test-100rps.png`: baseline load test at 100 requests/second
+6. `docs/screenshots/hpa-proof-scale-up-1.png`: HPA autoscaling proof snapshot 1
+7. `docs/screenshots/hpa-proof-scale-up-2.png`: HPA autoscaling proof snapshot 2
+
+![Ideal Cluster State](docs/screenshots/ideal-cluster-state.png)
+![Prometheus Target Health](docs/screenshots/prometheus-target-health.png)
+![Prometheus Rule Health](docs/screenshots/prometheus-rule-health.png)
+![Prometheus Alerts](docs/screenshots/prometheus-alerts.png)
+![Baseline Load Test 100rps](docs/screenshots/baseline-load-test-100rps.png)
+![HPA Proof 1](docs/screenshots/hpa-proof-scale-up-1.png)
+![HPA Proof 2](docs/screenshots/hpa-proof-scale-up-2.png)
+
 ## Documentation
 
 - `docs/ARCHITECTURE.md`
